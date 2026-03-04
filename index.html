@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculadora de Dosis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 420px;
+      margin: auto;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      flex: 1;
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover { background: #218838; }
+    .clear-btn { background: #dc3545; }
+    .clear-btn:hover { background: #c82333; }
+
+    .result {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1.35;
+    }
+    .note {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: normal;
+      color: #444;
+      line-height: 1.4;
+      background: #fafafa;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Calculadora de Dosis</h2>
+
+    <label for="peso">Peso del paciente (kg):</label>
+    <input type="number" id="peso" step="0.01" placeholder="Ej. 20" inputmode="decimal" />
+
+    <label for="dosis">Dosis recomendada (mg/kg/día):</label>
+    <input type="number" id="dosis" step="0.01" placeholder="Ej. 15" inputmode="decimal" />
+
+    <label for="presentacionMg">Presentación - cantidad de principio activo (mg):</label>
+    <input type="number" id="presentacionMg" step="0.01" placeholder="Ej. 75" inputmode="decimal" />
+
+    <label for="presentacionMl">Presentación - volumen total (ml):</label>
+    <input type="number" id="presentacionMl" step="0.01" placeholder="Ej. 3" inputmode="decimal" />
+
+    <label for="frecuencia">Frecuencia (veces/día):</label>
+    <input type="number" id="frecuencia" step="1" min="1" value="1" inputmode="numeric" />
+
+    <div class="buttons">
+      <button id="btnCalcular" onclick="calcular()">Calcular</button>
+      <button id="btnLimpiar" class="clear-btn" onclick="limpiar()" type="button">Limpiar</button>
+    </div>
+
+    <div class="result" id="resultado"></div>
+    <div class="note" id="nota" style="display:none;"></div>
+  </div>
+
+  <script>
+    // Orden de navegación con Enter (sin incluir "Limpiar")
+    const campos = ["peso", "dosis", "presentacionMg", "presentacionMl", "frecuencia"];
+    const inputs = campos.map(id => document.getElementById(id));
+
+    // Seleccionar automáticamente el valor al entrar a "frecuencia"
+    const frecuenciaInput = document.getElementById("frecuencia");
+    frecuenciaInput.addEventListener("focus", () => {
+      setTimeout(() => frecuenciaInput.select(), 0);
+    });
+
+    // Enter: avanza por campos; en el último (frecuencia) Enter calcula
+    inputs.forEach((input, idx) => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const esUltimo = idx === inputs.length - 1;
+          if (!esUltimo) inputs[idx + 1].focus();
+          else calcular();
+        }
+      });
+    });
+
+    function etiquetaFrecuencia(f) {
+      // Si f == 1 => "dosis única"
+      // Si f > 1 => "cada X horas" donde X = 24 / f (si no es entero, mostramos con 1 decimal)
+      if (f === 1) return "Dosis única";
+
+      const horas = 24 / f;
+      const esEntero = Math.abs(horas - Math.round(horas)) < 1e-9;
+      const horasTxt = esEntero ? String(Math.round(horas)) : horas.toFixed(1);
+
+      return `Cada ${horasTxt} horas`;
+    }
+
+    function calcular() {
+      const peso = parseFloat(document.getElementById("peso").value);
+      const dosis = parseFloat(document.getElementById("dosis").value); // mg/kg/día
+      const presentacionMg = parseFloat(document.getElementById("presentacionMg").value);
+      const presentacionMl = parseFloat(document.getElementById("presentacionMl").value);
+      const frecuenciaRaw = parseFloat(document.getElementById("frecuencia").value);
+
+      // Frecuencia: tratamos como entero >= 1
+      const frecuencia = Math.max(1, Math.round(frecuenciaRaw));
+
+      if (
+        isNaN(peso) || isNaN(dosis) || isNaN(presentacionMg) || isNaN(presentacionMl) || isNaN(frecuenciaRaw) ||
+        peso <= 0 || dosis <= 0 || presentacionMg <= 0 || presentacionMl <= 0 || frecuenciaRaw <= 0
+      ) {
+        document.getElementById("resultado").innerHTML = "⚠️ Ingresa valores válidos";
+        document.getElementById("nota").style.display = "none";
+        return;
+      }
+
+      // Reflejamos el redondeo en el input para evitar confusión
+      document.getElementById("frecuencia").value = String(frecuencia);
+
+      // Concentración (mg/ml)
+      const concentracionMgMl = presentacionMg / presentacionMl;
+
+      // Total diario (mg) = peso * dosis
+      const dosisTotalMg = peso * dosis;
+
+      // Total diario (ml)
+      const volumenTotalMl = dosisTotalMg / concentracionMgMl;
+
+      // Por toma (si frecuencia > 1): total / frecuencia
+      const dosisPorTomaMg = dosisTotalMg / frecuencia;
+      const volumenPorTomaMl = volumenTotalMl / frecuencia;
+
+      const freqLabel = etiquetaFrecuencia(frecuencia);
+
+      let html =
+        `💊 Dosis total: ${dosisTotalMg.toFixed(2)} mg<br>` +
+        `🧪 Volumen total: ${volumenTotalMl.toFixed(2)} ml<br>` +
+        `⏱️ Frecuencia: ${freqLabel}`;
+
+      if (frecuencia > 1) {
+        html +=
+          `<br><br>` +
+          `💊 Dosis por toma: ${dosisPorTomaMg.toFixed(2)} mg<br>` +
+          `🧪 Volumen por toma: ${volumenPorTomaMl.toFixed(2)} ml`;
+      }
+
+      document.getElementById("resultado").innerHTML = html;
+
+      // Nota educativa (siempre visible después de calcular)
+      const nota = document.getElementById("nota");
+      nota.style.display = "block";
+      nota.innerHTML =
+        `📌 <b>Nota:</b> La dosis se puede repetir según la frecuencia recomendada en la ficha técnica. `;
+    }
+
+    function limpiar() {
+      document.getElementById("peso").value = "";
+      document.getElementById("dosis").value = "";
+      document.getElementById("presentacionMg").value = "";
+      document.getElementById("presentacionMl").value = "";
+      document.getElementById("frecuencia").value = "1";
+      document.getElementById("resultado").innerHTML = "";
+      const nota = document.getElementById("nota");
+      nota.innerHTML = "";
+      nota.style.display = "none";
+      document.getElementById("peso").focus();
+    }
+
+    // Foco inicial
+    document.getElementById("peso").focus();
+  </script>
+</body>
+</html>
