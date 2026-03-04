@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://figueredojh87-netizen.github.io/calculadora-dosis/sitemap.xml
