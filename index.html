@@ -2,9 +2,20 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Calculadora de Dosis</title>
+  <title>Calculadora de dosis pediátrica (mg/kg)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
+  
+  <meta name="description" content="Calculadora de dosis pediátrica basada en mg/kg/día con conversión a ml según presentación y frecuencia. Herramienta de apoyo clínico." />
+  <link rel="canonical" href="https://figueredojh87-netizen.github.io/calculadora-dosis/" />
+
+  <meta property="og:title" content="Calculadora de dosis pediátrica (mg/kg)" />
+  <meta property="og:description" content="Calcula dosis total y por toma, y convierte a ml según presentación." />
+  <meta property="og:url" content="https://figueredojh87-netizen.github.io/calculadora-dosis/" />
+  <meta property="og:type" content="website" />
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#28a745" />
+<style>
     body {
       font-family: Arial, sans-serif;
       margin: 20px;
@@ -62,11 +73,30 @@
       border-radius: 8px;
       padding: 10px;
     }
+  
+    .subtitle {
+      margin-top: -10px;
+      color: #444;
+      line-height: 1.35;
+      font-size: 14px;
+    }
+    .disclaimer {
+      margin-top: 14px;
+      font-size: 12.5px;
+      color: #555;
+      line-height: 1.35;
+      background: #fff7e6;
+      border: 1px solid #ffe2b3;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Calculadora de Dosis</h2>
+    <p class="subtitle">Calcula dosis total diaria (mg) y volumen (ml) según peso, dosis (mg/kg/día), presentación y frecuencia.</p>
 
     <label for="peso">Peso del paciente (kg):</label>
     <input type="number" id="peso" step="0.01" placeholder="Ej. 20" inputmode="decimal" />
@@ -90,6 +120,11 @@
 
     <div class="result" id="resultado"></div>
     <div class="note" id="nota" style="display:none;"></div>
+  
+    <div class="disclaimer">
+      <b>Aviso:</b> Esta herramienta es solo de apoyo y no sustituye el criterio clínico ni la ficha técnica del medicamento. Verifica siempre dosis, indicación, concentración y ajustes según edad/función renal/hepática.
+    </div>
+
   </div>
 
   <script>
@@ -201,5 +236,14 @@
     // Foco inicial
     document.getElementById("peso").focus();
   </script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js");
+      });
+    }
+  </script>
+
 </body>
 </html>
